@@ -105,6 +105,7 @@
                 );
                 prevX = clientX;
                 prevY = clientY;
+                window.hopalong.run();
             }
         }
 

@@ -6,6 +6,7 @@
     // TODO: rewrite to class
     function Hopalong(canvas) {
         const {width, height} = document.body.getBoundingClientRect();
+        window.addEventListener('resize', this._onResize.bind(this));
 
         this._canvas = canvas;
         this._ctx = canvas.getContext('2d');
@@ -40,7 +41,6 @@
         }
         this.parameters._offsetLeft = left;
         this.parameters._offsetTop = top;
-        this.run();
     };
 
     Hopalong.prototype._createParameterSetter = function (name, defaultValue = null, onSet = window.hopalongUtil.identity, restart = false) {
@@ -149,6 +149,14 @@
         const {width, height} = document.body.getBoundingClientRect();
         this._ctx.fillStyle = '#000';
         this._ctx.fillRect(0, 0, width, height);
+    };
+
+    Hopalong.prototype._onResize = function () {
+        const {width, height} = document.body.getBoundingClientRect();
+        this.setOffset(width / 2, height / 2);
+        this._resizeToWindow();
+        this._clear();
+        this.run();
     };
 
     Hopalong.prototype._resizeToWindow = function () {
