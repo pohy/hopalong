@@ -88,11 +88,10 @@
         function onDragStart({clientX, clientY, dataTransfer}) {
             prevX = clientX;
             prevY = clientY;
-            initalIterations = window.hopalong.parameters.iterations;
-            window.hopalong.parameters.iterations = 1000;
             const img = this.cloneNode(true);
             img.style.opacity = 0;
             dataTransfer.setDragImage(img, 0, 0);
+            window.hopalong.toggleDragging();
         }
 
         function onDrag({clientX, clientY}) {
@@ -100,15 +99,18 @@
                 (clientX !== 0 && clientY !== 0)
                 && (prevX !== clientX || prevY !== clientY)
             ) {
-                window.hopalong.parameters.offsetLeft = window.hopalong.parameters.offsetLeft - (prevX - clientX);
-                window.hopalong.parameters.offsetTop = window.hopalong.parameters.offsetTop - (prevY - clientY);
+                window.hopalong.setOffset(
+                    window.hopalong.parameters.offsetLeft - (prevX - clientX),
+                    window.hopalong.parameters.offsetTop - (prevY - clientY)
+                );
                 prevX = clientX;
                 prevY = clientY;
             }
         }
 
         function onDragEnd() {
-            window.hopalong.parameters.iterations = initalIterations;
+            window.hopalong.toggleDragging();
+            window.hopalong.run();
         }
     }
 

@@ -14,17 +14,33 @@
             SCALE_MIN: 20,
             SCALE_MAX: 150
         };
+        this._runStartedAt = 0;
+        this._dragging = false;
         this.parameters = {};
         this._createParameterSetter('iterations', 10000);
         this._createParameterSetter('offsetLeft', width / 2);
         this._createParameterSetter('offsetTop', height / 2);
         this._createParameterSetter('scale', 80, this._scaleOnSet.bind(this));
         this._createParameterSetter('seed', Math.random());
+        this._createParameterSetter('batchSize', 1000);
 
         this._resizeToWindow();
         this._clear();
         this.run();
     }
+
+    Hopalong.prototype.toggleDragging = function (value = !this._dragging) {
+        this._dragging = value;
+    };
+
+    Hopalong.prototype.setOffset = function (left = null, top = null) {
+        if (left === null || top === null) {
+            throw new Error(`Parameters 'left', and 'top', cannot be undefined.`);
+        }
+        this.parameters._offsetLeft = left;
+        this.parameters._offsetTop = top;
+        this.run();
+    };
 
     Hopalong.prototype._createParameterSetter = function (name, defaultValue = null, onSet = window.hopalongUtil.identity) {
         const propName = `_${name}`;
@@ -52,16 +68,28 @@
 
     Hopalong.prototype._run = function (a, b, c) {
         const {scale, iterations} = this.parameters;
-        let y = 0;
-        let x = 0;
-        for (let i = 0; i < iterations; i++) {
-            this._color = generateColor(i);
-            let sign = x === 0 ? 0 : x / Math.abs(x);
-            const xx = y - sign * Math.pow(Math.abs(b * x - c), 0.5);
-            const yy = a - x;
-            this._plotWithOffset(xx * scale, yy * scale);
-            x = xx;
-            y = yy;
+        const runStartedAt = Date.now();
+        let x = 0, y = 0, i = 0;
+        // TODO: this naming is weird
+        this._runStartedAt = runStartedAt;
+
+
+        window.requestAnimationFrame(draw.bind(this));
+
+        function draw() {
+            for (let j = 0; j < this.parameters._batchSize; j++) {
+                this._color = generateColor(i);
+                let sign = x === 0 ? 0 : x / Math.abs(x);
+                const xx = y - sign * Math.pow(Math.abs(b * x - c), 0.5);
+                const yy = a - x;
+                this._plotWithOffset(xx * scale, yy * scale);
+                x = xx;
+                y = yy;
+            }
+            if (i < iterations && this._runStartedAt === runStartedAt && !this._dragging) {
+                i += this.parameters._batchSize;
+                window.requestAnimationFrame(draw.bind(this));
+            }
         }
 
         function generateColor(iteration) {
@@ -86,11 +114,16 @@
 
     Hopalong.prototype._plot = function (x, y) {
         const {width, height} = document.body.getBoundingClientRect();
-        if (x >= 0 && x <= width && y >= 0 && y <= height) {
+        if (this._isPointVisible(x, y)) {
             this._ctx.fillStyle = this._color;
-            this._ctx.fillRect(x - 1, y - 1, 2, 2);
+            this._ctx.fillRect(x, y, 1, 1);
         }
     };
+
+    Hopalong.prototype._isPointVisible = function (x, y) {
+        const {width, height} = document.body.getBoundingClientRect();
+        return x >= 0 && x <= width && y >= 0 && y <= height;
+    }
 
     Hopalong.prototype._clear = function () {
         const {width, height} = document.body.getBoundingClientRect();
