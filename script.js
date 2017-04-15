@@ -1,6 +1,10 @@
 (function () {
     'use strict';
 
+    window.hopalongUtil = {
+        identity
+    };
+
     window.addEventListener('load', init);
 
     function init() {
@@ -9,6 +13,7 @@
         bindParameterControl('iterations');
         bindParameterControl('scale');
         bindControlEvent('new-seed', newSeed);
+        bindZoom();
     }
 
     function newSeed() {
@@ -49,5 +54,17 @@
             const parsedValue = parseInt(value, 10);
             window.hopalong.parameters[parameter] = isNaN(parsedValue) ? 0 : parsedValue;
         }
+    }
+
+    function bindZoom() {
+        document.body.addEventListener('wheel', onZoom);
+
+        function onZoom(event) {
+            window.hopalong.parameters.scale = window.hopalong.parameters.scale - event.deltaY;
+        }
+    }
+
+    function identity(value) {
+        return value;
     }
 })();

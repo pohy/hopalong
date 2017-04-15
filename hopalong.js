@@ -10,11 +10,15 @@
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.color = '#fff';
+        this.constants = {
+            SCALE_MIN: 1,
+            SCALE_MAX: 100
+        };
         this.parameters = {};
         this._createParameterSetter('iterations', 10000);
         this._createParameterSetter('offsetLeft', width / 2);
         this._createParameterSetter('offsetTop', height / 2);
-        this._createParameterSetter('scale', 80);
+        this._createParameterSetter('scale', 80, this._scaleOnSet.bind(this));
         this._createParameterSetter('seed', Math.random());
 
         this._resizeToWindow();
@@ -22,7 +26,7 @@
         this.run();
     }
 
-    Hopalong.prototype._createParameterSetter = function (name, defaultValue = null) {
+    Hopalong.prototype._createParameterSetter = function (name, defaultValue = null, onSet = window.hopalongUtil.identity) {
         const propName = `_${name}`;
         this.parameters[propName] = defaultValue;
         Object.defineProperty(this.parameters, name, {
@@ -31,12 +35,19 @@
         });
 
         function setter(value) {
-            this.parameters[propName] = value;
+            this.parameters[propName] = onSet(value);
             this.run();
         }
         function getter() {
             return this.parameters[propName];
         }
+    };
+
+    Hopalong.prototype._scaleOnSet = function (value) {
+        const {SCALE_MIN, SCALE_MAX} = this.constants;
+        return value >= SCALE_MIN && value <= SCALE_MAX
+            ? value
+            : this.parameters.scale;
     };
 
     Hopalong.prototype._run = function (a, b, c) {
