@@ -92,11 +92,8 @@
         let x = 0;
         this._plotWithOffset(x, y);
         for (let i = 0; i < iterations; i++) {
-            // TODO: prettify
             let sign = x === 0 ? 0 : x / Math.abs(x);
-            const q = b * x - c;
-            const number = Math.pow(Math.abs(q), 0.5);
-            const xx = y - (sign) * number;
+            const xx = y - sign * Math.pow(Math.abs(b * x - c), 0.5);
             const yy = a - x;
             this._plotWithOffset(xx * scale, yy * scale);
             x = xx;
