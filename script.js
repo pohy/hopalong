@@ -8,14 +8,15 @@
     window.addEventListener('load', init);
 
     function init() {
+        const SCALE_ID = 'scale';
         const canvas = document.getElementById('canvas');
-        const scaleId = 'scale';
         window.hopalong = new Hopalong(canvas);
         bindParameterControl('iterations');
-        bindParameterControl(scaleId);
-        initScaleLimits(scaleId);
+        bindParameterControl(SCALE_ID);
+        initScaleLimits(SCALE_ID);
         bindControlEvent('new-seed', newSeed);
-        bindZoom(scaleId);
+        bindZoom(SCALE_ID);
+        bindDragging(canvas);
     }
 
     function newSeed() {
@@ -61,8 +62,8 @@
     function bindZoom(scaleId) {
         document.body.addEventListener('wheel', onZoom);
 
-        function onZoom(event) {
-            window.hopalong.parameters.scale = window.hopalong.parameters.scale - event.deltaY;
+        function onZoom({deltaY}) {
+            window.hopalong.parameters.scale = window.hopalong.parameters.scale - deltaY;
             setInputValue(scaleId, window.hopalong.parameters.scale);
         }
     }
@@ -75,6 +76,40 @@
         }
         scaleEl.setAttribute('min', SCALE_MIN);
         scaleEl.setAttribute('max', SCALE_MAX);
+    }
+
+    function bindDragging(canvas) {
+        let prevX = null, prevY = null;
+        let initalIterations = null;
+        canvas.addEventListener('dragstart', onDragStart);
+        canvas.addEventListener('drag', onDrag);
+        canvas.addEventListener('dragend', onDragEnd);
+
+        function onDragStart({clientX, clientY, dataTransfer}) {
+            prevX = clientX;
+            prevY = clientY;
+            initalIterations = window.hopalong.parameters.iterations;
+            window.hopalong.parameters.iterations = 1000;
+            const img = this.cloneNode(true);
+            img.style.opacity = 0;
+            dataTransfer.setDragImage(img, 0, 0);
+        }
+
+        function onDrag({clientX, clientY}) {
+            if (
+                (clientX !== 0 && clientY !== 0)
+                && (prevX !== clientX || prevY !== clientY)
+            ) {
+                window.hopalong.parameters.offsetLeft = window.hopalong.parameters.offsetLeft - (prevX - clientX);
+                window.hopalong.parameters.offsetTop = window.hopalong.parameters.offsetTop - (prevY - clientY);
+                prevX = clientX;
+                prevY = clientY;
+            }
+        }
+
+        function onDragEnd() {
+            window.hopalong.parameters.iterations = initalIterations;
+        }
     }
 
     function setInputValue(id, value) {

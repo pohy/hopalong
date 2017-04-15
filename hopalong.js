@@ -68,7 +68,6 @@
     Hopalong.prototype.run = function (num) {
         this._clear();
         this.parameters._iterations = num || this.parameters._iterations;
-        console.log(this.parameters.seed)
         Math.seedrandom(this.parameters.seed);
         this._run(Math.random(), Math.random(), Math.random());
     };
@@ -79,8 +78,11 @@
     };
 
     Hopalong.prototype._plot = function (x, y) {
-        this._ctx.fillStyle = this._color;
-        this._ctx.fillRect(x, y, 1, 1);
+        const {width, height} = document.body.getBoundingClientRect();
+        if (x >= 0 && x <= width && y >= 0 && y <= height) {
+            this._ctx.fillStyle = this._color;
+            this._ctx.fillRect(x, y, 1, 1);
+        }
     };
 
     Hopalong.prototype._clear = function () {
