@@ -54,14 +54,21 @@
         const {scale, iterations} = this.parameters;
         let y = 0;
         let x = 0;
-        this._plotWithOffset(x, y);
         for (let i = 0; i < iterations; i++) {
+            this._color = generateColor(i);
             let sign = x === 0 ? 0 : x / Math.abs(x);
             const xx = y - sign * Math.pow(Math.abs(b * x - c), 0.5);
             const yy = a - x;
             this._plotWithOffset(xx * scale, yy * scale);
             x = xx;
             y = yy;
+        }
+
+        function generateColor(iteration) {
+            const hue = 360 / iterations * iteration;
+            const saturation = 100;
+            const lightness = 50;
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
         }
     };
 
@@ -81,7 +88,7 @@
         const {width, height} = document.body.getBoundingClientRect();
         if (x >= 0 && x <= width && y >= 0 && y <= height) {
             this._ctx.fillStyle = this._color;
-            this._ctx.fillRect(x, y, 1, 1);
+            this._ctx.fillRect(x - 1, y - 1, 2, 2);
         }
     };
 
