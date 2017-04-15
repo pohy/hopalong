@@ -7,12 +7,12 @@
     function Hopalong(canvas) {
         const {width, height} = document.body.getBoundingClientRect();
 
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
-        this.color = '#fff';
-        this.constants = {
-            SCALE_MIN: 1,
-            SCALE_MAX: 100
+        this._canvas = canvas;
+        this._ctx = canvas.getContext('2d');
+        this._color = '#fff';
+        this._constants = {
+            SCALE_MIN: 20,
+            SCALE_MAX: 150
         };
         this.parameters = {};
         this._createParameterSetter('iterations', 10000);
@@ -44,7 +44,7 @@
     };
 
     Hopalong.prototype._scaleOnSet = function (value) {
-        const {SCALE_MIN, SCALE_MAX} = this.constants;
+        const {SCALE_MIN, SCALE_MAX} = this._constants;
         return value >= SCALE_MIN && value <= SCALE_MAX
             ? value
             : this.parameters.scale;
@@ -79,19 +79,19 @@
     };
 
     Hopalong.prototype._plot = function (x, y) {
-        this.ctx.fillStyle = this.color;
-        this.ctx.fillRect(x, y, 1, 1);
+        this._ctx.fillStyle = this._color;
+        this._ctx.fillRect(x, y, 1, 1);
     };
 
     Hopalong.prototype._clear = function () {
         const {width, height} = document.body.getBoundingClientRect();
-        this.ctx.fillStyle = '#000';
-        this.ctx.fillRect(0, 0, width, height);
+        this._ctx.fillStyle = '#000';
+        this._ctx.fillRect(0, 0, width, height);
     };
 
     Hopalong.prototype._resizeToWindow = function () {
         const {width, height} = document.body.getBoundingClientRect();
-        this.canvas.width = width;
-        this.canvas.height = height;
+        this._canvas.width = width;
+        this._canvas.height = height;
     };
 })();

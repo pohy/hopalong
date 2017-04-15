@@ -9,11 +9,13 @@
 
     function init() {
         const canvas = document.getElementById('canvas');
+        const scaleId = 'scale';
         window.hopalong = new Hopalong(canvas);
         bindParameterControl('iterations');
-        bindParameterControl('scale');
+        bindParameterControl(scaleId);
+        initScaleLimits(scaleId);
         bindControlEvent('new-seed', newSeed);
-        bindZoom();
+        bindZoom(scaleId);
     }
 
     function newSeed() {
@@ -56,12 +58,31 @@
         }
     }
 
-    function bindZoom() {
+    function bindZoom(scaleId) {
         document.body.addEventListener('wheel', onZoom);
 
         function onZoom(event) {
             window.hopalong.parameters.scale = window.hopalong.parameters.scale - event.deltaY;
+            setInputValue(scaleId, window.hopalong.parameters.scale);
         }
+    }
+
+    function initScaleLimits(scaleId) {
+        const {SCALE_MIN, SCALE_MAX} = window.hopalong._constants;
+        const scaleEl = document.getElementById(scaleId);
+        if (!scaleEl) {
+            return console.error('Scale element not found');
+        }
+        scaleEl.setAttribute('min', SCALE_MIN);
+        scaleEl.setAttribute('max', SCALE_MAX);
+    }
+
+    function setInputValue(id, value) {
+        const inputEl = document.getElementById(id);
+        if (!inputEl) {
+            return console.error(`Input with id '${id}' not found`);
+        }
+        inputEl.value = value;
     }
 
     function identity(value) {
