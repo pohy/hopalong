@@ -5,18 +5,26 @@
 
     function init() {
         const canvas = document.getElementById('canvas');
-        const hopalong = new Hopalong(canvas);
-        window.hopalong = hopalong;
-        // resizeCanvasToWindow(canvas);
-        // const {width, height} = canvas;
-        // const ctx = canvas.getContext('2d');
-        // ctx.fillStyle = '#000';
-        // ctx.fillRect(0, 0, width, height);
-        // ctx.strokeStyle = '#fff';
-        // ctx.beginPath();
-        // ctx.moveTo(0, 0);
-        // ctx.lineTo(width, height);
-        // ctx.stroke();
+        window.hopalong = new Hopalong(canvas);
+        bindParameterControl('iterations');
+        bindParameterControl('scale');
+    }
+
+    function bindParameterControl(parameter, listener) {
+        const controlEl = document.getElementById(parameter);
+        if (!controlEl) {
+            throw new Error(`Control with id '${parameter}' not found`);
+        }
+        if (typeof window.hopalong.parameters[parameter] === 'undefined') {
+            throw new Error(`Parameter with name '${parameter}' does not exist`);
+        }
+        controlEl.addEventListener('change', listener || onChange);
+        controlEl.addEventListener('input', listener || onChange);
+
+        function onChange({target: {value}}) {
+            const parsedValue = parseInt(value, 10);
+            window.hopalong.parameters[parameter] = isNaN(parsedValue) ? 0 : parsedValue;
+        }
     }
 
     function Hopalong(canvas) {
