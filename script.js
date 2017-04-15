@@ -8,18 +8,42 @@
         window.hopalong = new Hopalong(canvas);
         bindParameterControl('iterations');
         bindParameterControl('scale');
+        bindControlEvent('new-seed', newSeed);
     }
 
-    function bindParameterControl(parameter, listener) {
-        const controlEl = document.getElementById(parameter);
+    function newSeed() {
+        window.hopalong.parameters.seed = Math.random();
+    }
+
+    function bindControlEvent(controlId, listener) {
+        const controlEl = document.getElementById(controlId);
         if (!controlEl) {
-            throw new Error(`Control with id '${parameter}' not found`);
+            throw new Error(`Control with id '${controlId}' not found`);
         }
+        if (!listener) {
+            throw new Error('Listener not defined');
+        }
+        if (isButton()) {
+            controlEl.addEventListener('click', listener);
+        } else {
+            controlEl.addEventListener('change', listener);
+            controlEl.addEventListener('input', listener);
+        }
+
+        return controlEl;
+
+        function isButton() {
+            return controlEl.tagName.toLowerCase() === 'button'
+                || controlEl.attributes.type && controlEl.attributes.type.name === 'button';
+        }
+    }
+
+    function bindParameterControl(parameter) {
         if (typeof window.hopalong.parameters[parameter] === 'undefined') {
             throw new Error(`Parameter with name '${parameter}' does not exist`);
         }
-        controlEl.addEventListener('change', listener || onChange);
-        controlEl.addEventListener('input', listener || onChange);
+        const controlEl = bindControlEvent(parameter, onChange);
+        controlEl.value = window.hopalong.parameters[parameter];
 
         function onChange({target: {value}}) {
             const parsedValue = parseInt(value, 10);
@@ -38,6 +62,7 @@
         this._createParameterSetter('offsetLeft', width / 2);
         this._createParameterSetter('offsetTop', height / 2);
         this._createParameterSetter('scale', 80);
+        this._createParameterSetter('seed', Math.random());
 
         this._resizeToWindow();
         this._clear();
@@ -61,25 +86,13 @@
         }
     };
 
-    /*
-     INPUT num
-     INPUT a, b, c
-     x = 0
-     y = 0
-     PLOT(x, y)
-     FOR i = 1 TO num
-     xx = y - SIGN(x) * [ABS(b*x - c)]^0.5
-     yy = a - x
-     x = xx
-     y = yy
-     */
-
     Hopalong.prototype._run = function (a, b, c) {
         const {scale, iterations} = this.parameters;
         let y = 0;
         let x = 0;
         this._plotWithOffset(x, y);
         for (let i = 0; i < iterations; i++) {
+            // TODO: prettify
             let sign = x === 0 ? 0 : x / Math.abs(x);
             const q = b * x - c;
             const number = Math.pow(Math.abs(q), 0.5);
@@ -94,6 +107,8 @@
     Hopalong.prototype.run = function (num) {
         this._clear();
         this.parameters._iterations = num || this.parameters._iterations;
+        console.log(this.parameters.seed)
+        Math.seedrandom(this.parameters.seed);
         this._run(Math.random(), Math.random(), Math.random());
     };
 
