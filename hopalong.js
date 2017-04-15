@@ -12,21 +12,22 @@
         this._color = '#fff';
         this._constants = {
             SCALE_MIN: 20,
-            SCALE_MAX: 150
+            SCALE_MAX: 750
         };
-        this._runStartedAt = 0;
+        this._renderStartedAt = 0;
         this._dragging = false;
+        this._points = [];
         this.parameters = {};
-        this._createParameterSetter('iterations', 10000);
+        this._createParameterSetter('iterations', 100000);
         this._createParameterSetter('offsetLeft', width / 2);
         this._createParameterSetter('offsetTop', height / 2);
         this._createParameterSetter('scale', 80, this._scaleOnSet.bind(this));
-        this._createParameterSetter('seed', Math.random());
-        this._createParameterSetter('batchSize', 1000);
+        this._createParameterSetter('seed', Math.random(), undefined, true);
+        this._createParameterSetter('batchSize', 100);
 
         this._resizeToWindow();
         this._clear();
-        this.run();
+        this.run(true);
     }
 
     Hopalong.prototype.toggleDragging = function (value = !this._dragging) {
@@ -42,7 +43,7 @@
         this.run();
     };
 
-    Hopalong.prototype._createParameterSetter = function (name, defaultValue = null, onSet = window.hopalongUtil.identity) {
+    Hopalong.prototype._createParameterSetter = function (name, defaultValue = null, onSet = window.hopalongUtil.identity, restart = false) {
         const propName = `_${name}`;
         this.parameters[propName] = defaultValue;
         Object.defineProperty(this.parameters, name, {
@@ -52,7 +53,7 @@
 
         function setter(value) {
             this.parameters[propName] = onSet(value);
-            this.run();
+            this.run(restart);
         }
         function getter() {
             return this.parameters[propName];
@@ -66,45 +67,65 @@
             : this.parameters.scale;
     };
 
-    Hopalong.prototype._run = function (a, b, c) {
-        const {scale, iterations} = this.parameters;
-        const runStartedAt = Date.now();
-        let x = 0, y = 0, i = 0;
-        // TODO: this naming is weird
-        this._runStartedAt = runStartedAt;
-
-
-        window.requestAnimationFrame(draw.bind(this));
-
-        function draw() {
-            for (let j = 0; j < this.parameters._batchSize; j++) {
-                this._color = generateColor(i);
-                let sign = x === 0 ? 0 : x / Math.abs(x);
-                const xx = y - sign * Math.pow(Math.abs(b * x - c), 0.5);
-                const yy = a - x;
-                this._plotWithOffset(xx * scale, yy * scale);
-                x = xx;
-                y = yy;
-            }
-            if (i < iterations && this._runStartedAt === runStartedAt && !this._dragging) {
-                i += this.parameters._batchSize;
-                window.requestAnimationFrame(draw.bind(this));
-            }
+    Hopalong.prototype._calculatePoints = function (a, b, c, restart) {
+        if (restart) {
+            this._points = [];
         }
-
-        function generateColor(iteration) {
-            const hue = 360 / iterations * iteration;
-            const saturation = 100;
-            const lightness = 50;
-            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        const {iterations} = this.parameters;
+        const {_points: {length: size}} = this;
+        const startingIteration = restart ? 0 : size - 1;
+        let x = 0, y = 0;
+        for (let i = startingIteration; i < iterations; i++) {
+            let sign = x === 0 ? 0 : x / Math.abs(x);
+            const xx = y - sign * Math.pow(Math.abs(b * x - c), 0.5);
+            const yy = a - x;
+            this._points[i] = [xx, yy];
+            x = xx;
+            y = yy;
         }
     };
 
-    Hopalong.prototype.run = function (num) {
+    Hopalong.prototype._render = function () {
+        let iteration = 0;
+        const {batchSize, scale, iterations} = this.parameters;
+        const renderStartedAt = this._renderStartedAt = Date.now();
+
+        window.requestAnimationFrame(draw.bind(this));
+
+        // FIXME: haze on scale change
+        // FIXME: not all points drawing on iterations change
+        function draw() {
+            const currentBatchSize = this._dragging ? 1000 : iteration + batchSize;
+            for (iteration; iteration < currentBatchSize; iteration++) {
+                if (iteration >= iterations || !this._points[iteration]) {
+                    return;
+                }
+                const [x, y] = this._points[iteration];
+                if (iteration % batchSize === 0) {
+                    this._color = this._generateColor(iteration);
+                }
+                this._plotWithOffset(x * scale, y * scale);
+            }
+            if (iteration < iterations && this._renderStartedAt === renderStartedAt) {
+                window.requestAnimationFrame(draw.bind(this));
+            } else if (iteration >= iterations) {
+                this.run(true);
+            }
+        }
+    };
+
+    Hopalong.prototype._generateColor = function (iteration) {
+        const hue = 360 / this.parameters.iterations * iteration;
+        const saturation = 100;
+        const lightness = 50;
+        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    };
+
+    Hopalong.prototype.run = function (restart) {
         this._clear();
-        this.parameters._iterations = num || this.parameters._iterations;
         Math.seedrandom(this.parameters.seed);
-        this._run(Math.random(), Math.random(), Math.random());
+        this._calculatePoints(Math.random(), Math.random(), Math.random(), restart);
+        this._render();
     };
 
     Hopalong.prototype._plotWithOffset = function (x, y) {
@@ -113,7 +134,6 @@
     };
 
     Hopalong.prototype._plot = function (x, y) {
-        const {width, height} = document.body.getBoundingClientRect();
         if (this._isPointVisible(x, y)) {
             this._ctx.fillStyle = this._color;
             this._ctx.fillRect(x, y, 1, 1);
